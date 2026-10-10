@@ -35,8 +35,12 @@ order: מיקום בתפריט (1, 2, 3...)
 ```
 image: assets/clinic.webp
 image_alt: תיאור קצר של התמונה
+image_shape: house
 ```
-העמוד יוצג עם הטקסט ליד התמונה (במסגרת קשת). כרגע: אודות ← `clinic.webp`, טיפולי שפה ← `games.webp`.
+העמוד יוצג עם הטקסט ליד התמונה. צורת המסגרת (`image_shape`): `arch` קשת, `house` בית, `blob` צורה אורגנית שזזה, `circle` עיגול.
+כרגע: אודות ← `clinic.webp` בצורת בית, טיפולי שפה ← `games.webp` בצורה אורגנית.
+
+**לוגו (אייקון בלשונית ובטלפון)** – `favicon-32.png`, `favicon-96.png`, `apple-touch-icon.png` ב־`assets/`. כרגע: האישה המאוירת (המקור ב־`originals/avatar.png`). האריה שמור ב־`originals/lion/` – להחזרתו מעתיקים את שלושת הקבצים משם ל־`assets/`.
 עדיף להקטין תמונות לפני העלאה (עד 1200 פיקסלים). המקוריים שמורים ב־`originals/`.
 
 **תעודות** – ב־`content.json` תחת `certificates`. לכל תעודה: שם, מוסד, שנה, ותמונה/סריקה (למשל `assets/certificates/degree.jpg`) – לחיצה עליה מגדילה. מוצג בעמוד שבראשו `certificates: true` (כרגע אודות).

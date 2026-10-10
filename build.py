@@ -158,6 +158,7 @@ def load_pages():
             "layout": meta.get("layout", "page"),
             "image": meta.get("image", ""),
             "image_alt": meta.get("image_alt", ""),
+            "image_shape": meta.get("image_shape", "arch"),
             "certificates": meta.get("certificates", "").lower() == "true",
             "body": body,
         })
@@ -315,14 +316,14 @@ def render(page, pages, c, photo_src):
         title = inline(page["title"] or page["nav"])
         certs = body_certificates(c) if page["certificates"] else ""
         if page["image"] and (ROOT / page["image"]).is_file():
-            # split layout: title + text beside an arch-framed photo
+            # split layout: title + text beside a framed photo (shape chosen per page: arch/house/blob/circle)
             main = """
 <section class="page-head split">
   <div class="wrap split-grid">
     <div class="split-text"><h1>{title}</h1><span class="rule" aria-hidden="true"></span>{inner}</div>
-    <figure class="arch"><img src="{src}" alt="{alt}"></figure>
+    <figure class="frame frame-{shape}"><img src="{src}" alt="{alt}"></figure>
   </div>
-</section>{certs}""".format(title=title, inner=inner, src=esc(versioned(page["image"])), alt=esc(page["image_alt"]), certs=certs)
+</section>{certs}""".format(title=title, inner=inner, src=esc(versioned(page["image"])), alt=esc(page["image_alt"]), shape=esc(page["image_shape"]), certs=certs)
         else:
             main = """
 <section class="page-head">

@@ -153,15 +153,35 @@ a:hover { color: var(--sage-dark); }
 .split-text .prose { margin-top: 1.6rem; font-size: 1.15rem; }
 .split-text .contact { margin-top: 1.5rem; }
 
-.arch { position: relative; justify-self: center; width: min(100%, 360px); animation: rise .8s .15s both; }
-.arch::before {         /* קשת חימר מאחורי התמונה */
-  content: ""; position: absolute; inset: 1.2rem -1.2rem -1.2rem 1.2rem;
-  border: 2px solid var(--clay); border-radius: 999px 999px 22px 22px;
+/* מסגרות תמונה – בוחרים בראש קובץ העמוד: image_shape: arch / house / blob / circle */
+.frame {
+  position: relative; isolation: isolate; justify-self: center; width: min(100%, 360px);
+  animation: rise .8s .15s both; filter: drop-shadow(0 10px 22px rgba(44, 51, 46, .14));
 }
-.arch img {
-  position: relative; width: 100%; aspect-ratio: 4 / 5; object-fit: cover;
-  border-radius: 999px 999px 22px 22px; box-shadow: var(--shadow);
+.frame::before, .frame::after { content: ""; position: absolute; z-index: -1; }
+.frame img { position: relative; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
+
+/* קשת */
+.frame-arch img, .frame-arch::before { border-radius: 999px 999px 22px 22px; }
+.frame-arch::before { inset: 1.2rem -1.2rem -1.2rem 1.2rem; border: 2px solid var(--clay); }
+
+/* בית – גג משולש וארובה */
+.frame-house img, .frame-house::before { clip-path: polygon(50% 0, 100% 30%, 100% 100%, 0 100%, 0 30%); }
+.frame-house img { border-radius: 0 0 18px 18px; }
+.frame-house::before { inset: 1.2rem -1.2rem -1.2rem 1.2rem; background: var(--clay-light); }
+.frame-house::after { left: 67%; top: 4%; width: 11%; height: 18%; background: var(--clay); border-radius: 4px 4px 0 0; }
+
+/* צורה אורגנית שזזה לאט */
+.frame-blob img { aspect-ratio: 1; border-radius: 62% 38% 55% 45% / 52% 45% 55% 48%; animation: morph 14s ease-in-out infinite alternate; }
+.frame-blob::before {
+  inset: -14px; border: 2px solid var(--clay);
+  border-radius: 45% 55% 40% 60% / 55% 40% 60% 45%; animation: morph 18s ease-in-out infinite alternate-reverse;
 }
+@keyframes morph { 50% { border-radius: 40% 60% 45% 55% / 60% 40% 58% 42%; } }
+
+/* עיגול */
+.frame-circle img { aspect-ratio: 1; border-radius: 50%; }
+.frame-circle::before { inset: -14px; border: 2px dashed var(--clay); border-radius: 50%; }
 
 .prose p + p, .prose p + ul, .prose ul + p { margin-top: 1.1em; }
 .prose h2 { font-size: 1.5rem; margin: 2rem 0 .6rem; }
@@ -258,7 +278,7 @@ a.zoom { cursor: zoom-in; }
   .menu a::after { display: none; }
   .menu a[aria-current="page"] { color: var(--clay); }
   .split-grid { grid-template-columns: 1fr; }
-  .arch { width: min(100%, 300px); }
+  .frame { width: min(100%, 300px); }
 }
 @media (max-width: 700px) {
   body { font-size: 1.0625rem; }
@@ -268,7 +288,7 @@ a.zoom { cursor: zoom-in; }
   .home .actions { justify-content: center; }
   .photo-wrap { width: 220px; }
   .page-head.split { padding: 2.8rem 0 3.2rem; }
-  .arch { width: min(100% - 2rem, 260px); }
+  .frame { width: min(100% - 2rem, 260px); }
   .contact div { grid-template-columns: 1fr; gap: 0; }
   .float-wa { width: 52px; height: 52px; bottom: 16px; left: 16px; }
 }

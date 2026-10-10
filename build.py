@@ -365,7 +365,8 @@ def render(page, pages, c, photo_src):
   <meta property="og:site_name" content="{name}">
   <meta property="og:locale" content="he_IL">{canonical}
   <meta name="theme-color" content="#5D7A5E">
-  <link rel="icon" href="{favicon}" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="32x32" href="{favicon32}">
+  <link rel="icon" type="image/png" sizes="96x96" href="{favicon96}">
   <link rel="apple-touch-icon" href="{touch_icon}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -394,7 +395,8 @@ def render(page, pages, c, photo_src):
            name=esc(brand["name"]), role=esc(brand["role"]), nav=nav, main=main, footer=" · ".join(footer_bits),
            year=datetime.date.today().year, float_wa=float_wa, head_extra=head_extra,
            style_css=versioned("assets/style.css"), site_js=versioned("assets/site.js"),
-           favicon=versioned("assets/favicon.svg"), touch_icon=versioned("assets/apple-touch-icon.png"))
+           favicon32=versioned("assets/favicon-32.png"), favicon96=versioned("assets/favicon-96.png"),
+           touch_icon=versioned("assets/apple-touch-icon.png"))
 
 
 def build():

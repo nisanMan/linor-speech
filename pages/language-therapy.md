@@ -3,7 +3,7 @@ nav: טיפולי שפה
 title: טיפולי שפה
 order: 4
 description: טיפולי שפה ודיבור לילדים בקליניקת שדו״ת, מושב כפר הנגיד – מטרות אישיות, משחק ושיחה, ושיתוף מלא של ההורים.
-image: assets/games.jpg
+image: assets/games.webp
 image_alt: משחקים וספרים בקליניקה
 ---
 

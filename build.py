@@ -265,7 +265,14 @@ def render(page, pages, c, photo_src):
     title = site["title"] if page["layout"] == "home" else "{} | {}".format(page["title"] or page["nav"], brand["name"])
     canonical = ""
     if site.get("url"):
-        canonical = '\n  <link rel="canonical" href="{}">'.format(esc(site["url"].rstrip("/") + "/" + page["file"]))
+        base = site["url"].rstrip("/") + "/"
+        page_url = base if page["file"] == "index.html" else base + page["file"]
+        canonical = '\n  <link rel="canonical" href="{0}">\n  <meta property="og:url" content="{0}">'.format(esc(page_url))
+        if site.get("image"):  # link-preview image (WhatsApp, Facebook) – must be an absolute URL
+            canonical += ('\n  <meta property="og:image" content="{0}">\n  <meta property="og:image:width" content="1200">'
+                          '\n  <meta property="og:image:height" content="630">\n  <meta property="og:image:alt" content="{1}">'
+                          '\n  <meta name="twitter:card" content="summary_large_image">').format(
+                esc(base + site["image"]), esc(brand["name"] + " – " + brand["role"]))
     footer_bits = [esc(brand["name"]), esc(brand["role"])]
     if contact.get("phone"):
         footer_bits.append(link_html(esc(href("phone", contact)), esc(contact["phone"])))
@@ -282,7 +289,12 @@ def render(page, pages, c, photo_src):
   <meta name="description" content="{description}">
   <meta property="og:title" content="{title}">
   <meta property="og:description" content="{description}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{name}">
   <meta property="og:locale" content="he_IL">{canonical}
+  <meta name="theme-color" content="#5D7A5E">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600&family=Frank+Ruhl+Libre:wght@400;500&display=swap" rel="stylesheet">

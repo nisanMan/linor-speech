@@ -368,9 +368,6 @@ def render(page, pages, c, photo_src):
   <link rel="icon" type="image/png" sizes="32x32" href="{favicon32}">
   <link rel="icon" type="image/png" sizes="96x96" href="{favicon96}">
   <link rel="apple-touch-icon" href="{touch_icon}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600&family=Frank+Ruhl+Libre:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{style_css}">{head_extra}
 </head>
 <body>

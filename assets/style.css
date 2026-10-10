@@ -13,8 +13,8 @@
   --ink: #2C332E;          /* טקסט */
   --muted: #5F6862;        /* טקסט משני */
   --line: #DCE5D8;
-  --serif: "Frank Ruhl Libre", Georgia, serif;
-  --sans: "Assistant", "Segoe UI", Arial, sans-serif;
+  --serif: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
   --header-h: 76px;
   --shadow: 0 10px 30px rgba(44, 51, 46, .10);
 }

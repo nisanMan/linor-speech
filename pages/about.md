@@ -2,6 +2,7 @@
 nav: אודות
 title: אודות
 order: 2
+description: לינור נזרי שר, קלינאית תקשורת – קליניקת שדו״ת במושב כפר הנגיד. טיפול אישי בשפה, דיבור ותקשורת והרצאות בתחומי הגיל הרך.
 image: assets/clinic.jpg
 image_alt: לינור בקליניקת שדו״ת
 certificates: true

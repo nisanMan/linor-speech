@@ -8,6 +8,12 @@
     "image": "assets/og-image.jpg"
   },
 
+  "google": {
+    "_הסבר": "analytics_id = מזהה Google Analytics (מתחיל ב-G-). site_verification = הקוד מ-Google Search Console. ריק = כבוי.",
+    "analytics_id": "",
+    "site_verification": ""
+  },
+
   "brand": {
     "name": "לינור נזרי שר",
     "role": "קלינאית תקשורת",
@@ -38,6 +44,8 @@
     "whatsapp_message": "שלום לינור, ",
     "email": "",
     "address": "הארז 96, מושב כפר הנגיד",
+    "street": "הארז 96",
+    "city": "כפר הנגיד",
     "facebook": "https://www.facebook.com/people/%D7%91%D7%9E%D7%97%D7%A9%D7%91%D7%94-%D7%9E%D7%99%D7%9C%D7%94/61584878556953/",
     "facebook_label": "במחשבה מילה"
   }

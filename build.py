@@ -6,6 +6,7 @@ Usage:
                              # rebuilds automatically when content.json, pages/ or assets/ change
 """
 import datetime
+import hashlib
 import html
 import http.server
 import json
@@ -50,6 +51,14 @@ CONTACT_FIELDS = [("phone", ICON_PHONE, "טלפון"),
 
 
 # ---------- text helpers ----------
+
+def versioned(path):
+    """Append a content hash (?v=...) so browsers fetch the new file as soon as it changes."""
+    f = ROOT / path
+    if not f.is_file():
+        return path
+    return "{}?v={}".format(path, hashlib.md5(f.read_bytes()).hexdigest()[:8])
+
 
 def esc(text):
     return html.escape(str(text), quote=True)
@@ -144,6 +153,7 @@ def load_pages():
             "file": "index.html" if path.stem == "index" else path.stem + ".html",
             "nav": meta.get("nav", path.stem),
             "title": meta.get("title", ""),
+            "description": meta.get("description", ""),
             "order": int(meta.get("order", 99)),
             "layout": meta.get("layout", "page"),
             "image": meta.get("image", ""),
@@ -214,7 +224,7 @@ def body_certificates(c):
     for item in certs.get("items", []):
         img = item.get("image")
         if img and (ROOT / img).is_file():
-            visual = '<a class="cert-img zoom" href="{0}"><img src="{0}" alt="{1}" loading="lazy"></a>'.format(esc(img), esc(item["title"]))
+            visual = '<a class="cert-img zoom" href="{0}"><img src="{0}" alt="{1}" loading="lazy"></a>'.format(esc(versioned(img)), esc(item["title"]))
         else:
             visual = '<div class="cert-img cert-seal">{}</div>'.format(SEAL_ICON)
         meta = " · ".join(esc(x) for x in (item.get("issuer"), item.get("year")) if x)
@@ -229,6 +239,67 @@ def body_certificates(c):
     <div class="cert-grid">{cards}</div>
   </div>
 </section>""".format(title=inline(certs.get("title", "")), cards="".join(cards))
+
+
+def plain(text):
+    """Markdown-ish text to plain text (for structured data)."""
+    text = re.sub(r"\[(.+?)\]\((.+?)\)", r"\1", text)
+    return re.sub(r"\s+", " ", text.replace("**", "")).strip()
+
+
+def json_ld(data):
+    return '\n  <script type="application/ld+json">{}</script>'.format(
+        json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
+
+
+def international_phone(phone):
+    digits = re.sub(r"\D", "", phone)
+    return "+972" + digits[1:] if digits.startswith("0") else "+" + digits
+
+
+def head_seo_and_analytics(page, c):
+    """Google Search Console verification, Google Analytics and schema.org structured data."""
+    site, brand, contact = c["site"], c["brand"], c["contact"]
+    google = c.get("google", {})
+    out = ""
+    if google.get("site_verification"):
+        out += '\n  <meta name="google-site-verification" content="{}">'.format(esc(google["site_verification"]))
+    ga = google.get("analytics_id")
+    if ga:
+        out += ('\n  <script async src="https://www.googletagmanager.com/gtag/js?id={0}"></script>'
+                '\n  <script>window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments);}}'
+                'gtag("js",new Date());gtag("config","{0}");</script>').format(esc(ga))
+
+    base = site.get("url", "").rstrip("/") + "/"
+    if page["layout"] == "home" and site.get("url"):
+        business = {
+            "@context": "https://schema.org",
+            "@type": "MedicalBusiness",
+            "name": "{} – {}".format(brand["name"], brand["role"]),
+            "description": site["description"],
+            "url": base,
+            "medicalSpecialty": "SpeechPathology",
+            "employee": {"@type": "Person", "name": brand["name"], "jobTitle": brand["role"]},
+        }
+        if site.get("image"):
+            business["image"] = base + site["image"]
+        if contact.get("phone"):
+            business["telephone"] = international_phone(contact["phone"])
+        if contact.get("street") or contact.get("city"):
+            business["address"] = {"@type": "PostalAddress", "streetAddress": contact.get("street", ""),
+                                   "addressLocality": contact.get("city", ""), "addressCountry": "IL"}
+        if contact.get("facebook"):
+            business["sameAs"] = [contact["facebook"]]
+        out += json_ld(business)
+    if page["layout"] == "faq":
+        questions = []
+        for chunk in re.split(r"^##\s+", page["body"].strip(), flags=re.M):
+            if chunk.strip():
+                q, _, a = chunk.partition("\n")
+                questions.append({"@type": "Question", "name": plain(q),
+                                  "acceptedAnswer": {"@type": "Answer", "text": plain(a)}})
+        out += json_ld({"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": questions})
+    return out
 
 
 def render(page, pages, c, photo_src):
@@ -251,7 +322,7 @@ def render(page, pages, c, photo_src):
     <div class="split-text"><h1>{title}</h1><span class="rule" aria-hidden="true"></span>{inner}</div>
     <figure class="arch"><img src="{src}" alt="{alt}"></figure>
   </div>
-</section>{certs}""".format(title=title, inner=inner, src=esc(page["image"]), alt=esc(page["image_alt"]), certs=certs)
+</section>{certs}""".format(title=title, inner=inner, src=esc(versioned(page["image"])), alt=esc(page["image_alt"]), certs=certs)
         else:
             main = """
 <section class="page-head">
@@ -272,7 +343,8 @@ def render(page, pages, c, photo_src):
             canonical += ('\n  <meta property="og:image" content="{0}">\n  <meta property="og:image:width" content="1200">'
                           '\n  <meta property="og:image:height" content="630">\n  <meta property="og:image:alt" content="{1}">'
                           '\n  <meta name="twitter:card" content="summary_large_image">').format(
-                esc(base + site["image"]), esc(brand["name"] + " – " + brand["role"]))
+                esc(base + versioned(site["image"])), esc(brand["name"] + " – " + brand["role"]))
+    head_extra = head_seo_and_analytics(page, c)
     footer_bits = [esc(brand["name"]), esc(brand["role"])]
     if contact.get("phone"):
         footer_bits.append(link_html(esc(href("phone", contact)), esc(contact["phone"])))
@@ -293,12 +365,12 @@ def render(page, pages, c, photo_src):
   <meta property="og:site_name" content="{name}">
   <meta property="og:locale" content="he_IL">{canonical}
   <meta name="theme-color" content="#5D7A5E">
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="icon" href="{favicon}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{touch_icon}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600&family=Frank+Ruhl+Libre:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="{style_css}">{head_extra}
 </head>
 <body>
 <header class="site-header">
@@ -315,29 +387,14 @@ def render(page, pages, c, photo_src):
 <footer class="site-footer"><div class="wrap">{footer} · © {year}</div></footer>
 {float_wa}
 <dialog class="lightbox" aria-label="תצוגה מוגדלת"><img alt=""></dialog>
-<script>
-  var btn = document.querySelector(".menu-btn");
-  btn.addEventListener("click", function () {{
-    var open = btn.getAttribute("aria-expanded") !== "true";
-    btn.setAttribute("aria-expanded", open);
-    document.body.classList.toggle("menu-open", open);
-  }});
-  var box = document.querySelector(".lightbox");
-  document.querySelectorAll("a.zoom").forEach(function (a) {{
-    a.addEventListener("click", function (e) {{
-      if (!box.showModal) return;
-      e.preventDefault();
-      box.querySelector("img").src = a.href;
-      box.showModal();
-    }});
-  }});
-  box.addEventListener("click", function () {{ box.close(); }});
-</script>
+<script src="{site_js}"></script>
 </body>
 </html>
-""".format(title=esc(title), description=esc(site["description"]), canonical=canonical, name=esc(brand["name"]),
-           role=esc(brand["role"]), nav=nav, main=main, footer=" · ".join(footer_bits), year=datetime.date.today().year,
-           float_wa=float_wa)
+""".format(title=esc(title), description=esc(page["description"] or site["description"]), canonical=canonical,
+           name=esc(brand["name"]), role=esc(brand["role"]), nav=nav, main=main, footer=" · ".join(footer_bits),
+           year=datetime.date.today().year, float_wa=float_wa, head_extra=head_extra,
+           style_css=versioned("assets/style.css"), site_js=versioned("assets/site.js"),
+           favicon=versioned("assets/favicon.svg"), touch_icon=versioned("assets/apple-touch-icon.png"))
 
 
 def build():
@@ -353,11 +410,21 @@ def build():
     if photo:
         if photo.parent != ASSETS:
             shutil.copy2(photo, DIST / "assets" / photo.name)
-        photo_src = "assets/" + photo.name
+        photo_src = "assets/{}?v={}".format(photo.name, hashlib.md5(photo.read_bytes()).hexdigest()[:8])
 
     for page in pages:
         (DIST / page["file"]).write_text(render(page, pages, content, photo_src), encoding="utf-8")
     (DIST / ".nojekyll").write_text("", encoding="utf-8")
+
+    # sitemap + robots for search engines
+    if content["site"].get("url"):
+        base = content["site"]["url"].rstrip("/") + "/"
+        urls = "".join("\n  <url><loc>{}</loc></url>".format(esc(base if p["file"] == "index.html" else base + p["file"]))
+                       for p in pages)
+        (DIST / "sitemap.xml").write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            "{}\n</urlset>\n".format(urls), encoding="utf-8")
+        (DIST / "robots.txt").write_text("User-agent: *\nAllow: /\n\nSitemap: {}sitemap.xml\n".format(base), encoding="utf-8")
 
 
 # ---------- local dev server ----------

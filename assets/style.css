@@ -258,9 +258,10 @@ a.zoom { cursor: zoom-in; }
 }
 .float-wa { bottom: 92px; background: var(--sage); }
 .float-wa:hover { transform: scale(1.08); background: var(--sage-dark); }
-.float-waze { bottom: 22px; background: var(--white); border: 1px solid var(--line); animation-delay: .75s; }
-.float-waze:hover { transform: scale(1.08); background: var(--sage-light); }
-.float-wa .ci, .float-waze .ci { width: 30px; height: 30px; }
+.float-waze { bottom: 22px; background: none; animation-delay: .75s; }
+.float-waze:hover { transform: scale(1.08); }
+.float-wa .ci { width: 30px; height: 30px; }
+.float-waze .ci { width: 100%; height: 100%; }
 
 /* ---------- כותרת תחתונה ---------- */
 .site-footer { background: var(--sage-light); color: var(--muted); font-size: .9rem; text-align: center; padding: 1.4rem 0; }

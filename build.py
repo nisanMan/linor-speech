@@ -291,6 +291,8 @@ def head_seo_and_analytics(page, c):
                                    "addressLocality": contact.get("city", ""), "addressCountry": "IL"}
         if contact.get("facebook"):
             business["sameAs"] = [contact["facebook"]]
+        if contact.get("area_served"):
+            business["areaServed"] = [{"@type": "City", "name": city} for city in contact["area_served"]]
         out += json_ld(business)
     if page["layout"] == "faq":
         questions = []
@@ -353,6 +355,9 @@ def render(page, pages, c, photo_src):
     if contact.get("whatsapp"):
         float_wa = '<a class="float-wa" href="{}" target="_blank" rel="noopener" aria-label="וואטסאפ">{}</a>'.format(
             esc(href("whatsapp", contact)), ICON_WHATSAPP.replace("#25D366", "#FFFFFF"))
+    if contact.get("address"):
+        float_wa += '\n<a class="float-waze" href="{}" target="_blank" rel="noopener" aria-label="ניווט בוויז">{}</a>'.format(
+            esc(href("address", contact)), ICON_WAZE)
     return """<!doctype html>
 <html lang="he" dir="rtl">
 <head>

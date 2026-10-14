@@ -32,7 +32,7 @@ document.addEventListener("click", function (e) {
   if (!a || typeof gtag !== "function") return;
   var method = contactMethod(a.getAttribute("href") || "");
   if (!method) return;
-  var where = a.classList.contains("float-wa") ? "floating_button"
+  var where = a.classList.contains("float-wa") || a.classList.contains("float-waze") ? "floating_button"
             : a.classList.contains("btn") ? "home_button"
             : a.closest(".contact") ? "contact_page"
             : a.closest(".site-footer") ? "footer" : "text_link";

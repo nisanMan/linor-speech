@@ -254,14 +254,12 @@ a.zoom { cursor: zoom-in; }
   position: fixed; left: 22px; z-index: 20;
   width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center;
   box-shadow: 0 8px 24px rgba(44, 51, 46, .25);
-  transition: transform .2s, background .2s; animation: rise .6s .6s both;
+  transition: transform .2s; animation: rise .6s .6s both;
 }
-.float-wa { bottom: 92px; background: var(--sage); }
-.float-wa:hover { transform: scale(1.08); background: var(--sage-dark); }
-.float-waze { bottom: 22px; background: none; animation-delay: .75s; }
-.float-waze:hover { transform: scale(1.08); }
-.float-wa .ci { width: 30px; height: 30px; }
-.float-waze .ci { width: 100%; height: 100%; }
+.float-wa { bottom: 92px; }
+.float-waze { bottom: 22px; animation-delay: .75s; }
+.float-wa:hover, .float-waze:hover { transform: scale(1.08); }
+.float-wa .ci, .float-waze .ci { width: 100%; height: 100%; }
 
 /* ---------- כותרת תחתונה ---------- */
 .site-footer { background: var(--sage-light); color: var(--muted); font-size: .9rem; text-align: center; padding: 1.4rem 0; }

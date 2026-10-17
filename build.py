@@ -1,4 +1,5 @@
-"""Builds the site from content.json + pages/*.md into dist/.
+"""Builds the site from content.json + pages/*.md into dist/ (Hebrew),
+and content.en.json + pages/en/*.md into dist/en/ (English).
 
 Usage:
     python build.py          # build into dist/
@@ -18,6 +19,7 @@ from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent
 CONTENT = ROOT / "content.json"
+CONTENT_EN = ROOT / "content.en.json"   # English overrides, merged on top of content.json
 PAGES = ROOT / "pages"
 ASSETS = ROOT / "assets"
 DIST = ROOT / "dist"
@@ -34,11 +36,27 @@ ICON_FACEBOOK = svg_icon(
 ICON_PHONE = svg_icon(  # Material Icons "call"
     '<path fill="#5D7A5E" d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/>')
 
-CONTACT_FIELDS = [("phone", ICON_PHONE, "טלפון"),
-                  ("whatsapp", lambda: whatsapp_icon(), "וואטסאפ"),
-                  ("email", '<span class="ci">✉️</span>', "דוא״ל"),
-                  ("address", lambda: waze_icon(), "כתובת"),
-                  ("facebook", ICON_FACEBOOK, "פייסבוק")]
+CONTACT_FIELDS = [("phone", ICON_PHONE),
+                  ("whatsapp", lambda: whatsapp_icon()),
+                  ("email", '<span class="ci">✉️</span>'),
+                  ("address", lambda: waze_icon()),
+                  ("facebook", ICON_FACEBOOK)]
+
+# Languages: (code, output folder, pages folder, content overrides file)
+LANGS = [("he", "", PAGES, None),
+         ("en", "en/", PAGES / "en", CONTENT_EN)]
+
+# Interface words that are not in the content files
+UI = {
+    "he": {"dir": "rtl", "locale": "he_IL", "send_message": "שליחת הודעה", "menu": "תפריט",
+           "main_nav": "ניווט ראשי", "lightbox": "תצוגה מוגדלת", "whatsapp": "וואטסאפ", "waze": "ניווט בוויז",
+           "switch_text": "EN", "switch_label": "English version",
+           "labels": {"phone": "טלפון", "whatsapp": "וואטסאפ", "email": "דוא״ל", "address": "כתובת", "facebook": "פייסבוק"}},
+    "en": {"dir": "ltr", "locale": "en_US", "send_message": "Send a message", "menu": "Menu",
+           "main_nav": "Main navigation", "lightbox": "Enlarged view", "whatsapp": "WhatsApp", "waze": "Navigate with Waze",
+           "switch_text": "עב", "switch_label": "גרסה בעברית",
+           "labels": {"phone": "Phone", "whatsapp": "WhatsApp", "email": "Email", "address": "Address", "facebook": "Facebook"}},
+}
 
 
 # ---------- text helpers ----------
@@ -121,26 +139,45 @@ def href(link, contact):
     return link
 
 
-def contact_list(contact):
+def contact_list(contact, ui):
     rows = []
-    for key, icon, label in CONTACT_FIELDS:
+    for key, icon in CONTACT_FIELDS:
         value = contact.get(key)
         if value:
-            label = (icon() if callable(icon) else icon) + label
+            label = (icon() if callable(icon) else icon) + ui["labels"][key]
             text = esc(value)
             if key == "facebook":
                 text = esc(contact.get("facebook_label") or value)
             elif key == "whatsapp":
-                text = "שליחת הודעה"
+                text = ui["send_message"]
+            elif key == "address":
+                text = esc(contact.get("address_display") or value)
             rows.append("<div><dt>{}</dt><dd>{}</dd></div>".format(label, link_html(esc(href(key, contact)), text)))
     return '<dl class="contact">{}</dl>'.format("".join(rows))
 
 
 # ---------- content loading ----------
 
-def load_pages():
+def deep_merge(base, override):
+    """Dictionaries are merged key by key; anything else (text, lists) is replaced."""
+    out = dict(base)
+    for k, v in override.items():
+        out[k] = deep_merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
+
+
+def load_content(override_file=None):
+    with CONTENT.open(encoding="utf-8") as f:
+        content = json.load(f)
+    if override_file and override_file.is_file():
+        with override_file.open(encoding="utf-8") as f:
+            content = deep_merge(content, json.load(f))
+    return content
+
+
+def load_pages(folder=PAGES):
     pages = []
-    for path in PAGES.glob("*.md"):
+    for path in folder.glob("*.md"):
         raw = path.read_text(encoding="utf-8")
         meta, body = {}, raw
         m = re.match(r"---\s*\n(.*?)\n---\s*\n?(.*)", raw, re.S)
@@ -306,14 +343,17 @@ def head_seo_and_analytics(page, c):
     return out
 
 
-def render(page, pages, c, photo_src):
+def render(page, pages, c, photo_src, lang="he", lang_dir="", other=None):
+    """Render one page. lang_dir is "" for Hebrew or "en/" for English; links are written relative to the
+    site root (a <base> tag makes that work inside en/). other = (folder, set of files) of the other language."""
+    ui = UI[lang]
     if page["layout"] == "home":
         main = body_home(page, c, photo_src)
     else:
         if page["layout"] == "faq":
             inner = body_faq(page)
         elif page["layout"] == "contact":
-            inner = '<div class="prose">{}</div>{}'.format(markdown(page["body"]), contact_list(c["contact"]))
+            inner = '<div class="prose">{}</div>{}'.format(markdown(page["body"]), contact_list(c["contact"], ui))
         else:
             inner = '<div class="prose">{}</div>'.format(markdown(page["body"]))
         title = inline(page["title"] or page["nav"])
@@ -334,15 +374,32 @@ def render(page, pages, c, photo_src):
 </section>
 <section class="page-body wrap narrow">{inner}</section>{certs}""".format(title=title, inner=inner, certs=certs)
 
-    nav = "".join('<a href="{}"{}>{}</a>'.format(p["file"], ' aria-current="page"' if p is page else "", esc(p["nav"]))
+    nav = "".join('<a href="{}"{}>{}</a>'.format(lang_dir + p["file"], ' aria-current="page"' if p is page else "", esc(p["nav"]))
                   for p in pages)
     site, brand, contact = c["site"], c["brand"], c["contact"]
     title = site["title"] if page["layout"] == "home" else "{} | {}".format(page["title"] or page["nav"], brand["name"])
+
+    # language switch: same page in the other language, or its home page if there is no such page
+    switch = ""
+    if other:
+        other_dir, other_files = other
+        target = other_dir + (page["file"] if page["file"] in other_files else "index.html")
+        switch = '<a class="lang-switch" href="{}" hreflang="{}" aria-label="{}">{}</a>'.format(
+            esc(target), "en" if lang == "he" else "he", esc(ui["switch_label"]), esc(ui["switch_text"]))
+
     canonical = ""
     if site.get("url"):
         base = site["url"].rstrip("/") + "/"
-        page_url = base if page["file"] == "index.html" else base + page["file"]
-        canonical = '\n  <link rel="canonical" href="{0}">\n  <meta property="og:url" content="{0}">'.format(esc(page_url))
+
+        def url_for(folder, file):
+            return base + folder + ("" if file == "index.html" else file)
+
+        canonical = '\n  <link rel="canonical" href="{0}">\n  <meta property="og:url" content="{0}">'.format(
+            esc(url_for(lang_dir, page["file"])))
+        if other and page["file"] in other[1]:  # tell Google the two language versions belong together
+            here, there = (lang, lang_dir), ("en" if lang == "he" else "he", other[0])
+            for code, folder in sorted([here, there]):
+                canonical += '\n  <link rel="alternate" hreflang="{}" href="{}">'.format(code, esc(url_for(folder, page["file"])))
         if site.get("image"):  # link-preview image (WhatsApp, Facebook) – must be an absolute URL
             canonical += ('\n  <meta property="og:image" content="{0}">\n  <meta property="og:image:width" content="1200">'
                           '\n  <meta property="og:image:height" content="630">\n  <meta property="og:image:alt" content="{1}">'
@@ -354,15 +411,16 @@ def render(page, pages, c, photo_src):
         footer_bits.append(link_html(esc(href("phone", contact)), esc(contact["phone"])))
     float_wa = ""
     if contact.get("whatsapp"):
-        float_wa = '<a class="float-wa" href="{}" target="_blank" rel="noopener" aria-label="וואטסאפ">{}</a>'.format(
-            esc(href("whatsapp", contact)), whatsapp_icon())
+        float_wa = '<a class="float-wa" href="{}" target="_blank" rel="noopener" aria-label="{}">{}</a>'.format(
+            esc(href("whatsapp", contact)), esc(ui["whatsapp"]), whatsapp_icon())
     if contact.get("address"):
-        float_wa += '\n<a class="float-waze" href="{}" target="_blank" rel="noopener" aria-label="ניווט בוויז">{}</a>'.format(
-            esc(href("address", contact)), waze_icon())
+        float_wa += '\n<a class="float-waze" href="{}" target="_blank" rel="noopener" aria-label="{}">{}</a>'.format(
+            esc(href("address", contact)), esc(ui["waze"]), waze_icon())
+    base_tag = '\n  <base href="../">' if lang_dir else ""
     return """<!doctype html>
-<html lang="he" dir="rtl">
+<html lang="{lang}" dir="{dir}">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8">{base_tag}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{title}</title>
   <meta name="description" content="{description}">
@@ -370,7 +428,7 @@ def render(page, pages, c, photo_src):
   <meta property="og:description" content="{description}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{name}">
-  <meta property="og:locale" content="he_IL">{canonical}
+  <meta property="og:locale" content="{locale}">{canonical}
   <meta name="theme-color" content="#5D7A5E">
   <link rel="icon" type="image/png" sizes="32x32" href="{favicon32}">
   <link rel="icon" type="image/png" sizes="96x96" href="{favicon96}">
@@ -380,22 +438,25 @@ def render(page, pages, c, photo_src):
 <body>
 <header class="site-header">
   <div class="wrap bar">
-    <a class="brand" href="index.html"><span class="brand-name">{name}</span><span class="brand-role">{role}</span></a>
-    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="תפריט">
+    <a class="brand" href="{home}"><span class="brand-name">{name}</span><span class="brand-role">{role}</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="{menu_label}">
       <span></span><span></span><span></span>
     </button>
-    <nav id="menu" class="menu" aria-label="ניווט ראשי">{nav}</nav>
+    <nav id="menu" class="menu" aria-label="{nav_label}">{nav}</nav>
+    {switch}
   </div>
 </header>
 <main>{main}
 </main>
 <footer class="site-footer"><div class="wrap">{footer} · © {year}</div></footer>
 {float_wa}
-<dialog class="lightbox" aria-label="תצוגה מוגדלת"><img alt=""></dialog>
+<dialog class="lightbox" aria-label="{lightbox_label}"><img alt=""></dialog>
 <script src="{site_js}"></script>
 </body>
 </html>
-""".format(title=esc(title), description=esc(page["description"] or site["description"]), canonical=canonical,
+""".format(lang=lang, dir=ui["dir"], base_tag=base_tag, locale=ui["locale"], home=lang_dir + "index.html",
+           menu_label=esc(ui["menu"]), nav_label=esc(ui["main_nav"]), lightbox_label=esc(ui["lightbox"]), switch=switch,
+           title=esc(title), description=esc(page["description"] or site["description"]), canonical=canonical,
            name=esc(brand["name"]), role=esc(brand["role"]), nav=nav, main=main, footer=" · ".join(footer_bits),
            year=datetime.date.today().year, float_wa=float_wa, head_extra=head_extra,
            style_css=versioned("assets/style.css"), site_js=versioned("assets/site.js"),
@@ -404,9 +465,7 @@ def render(page, pages, c, photo_src):
 
 
 def build():
-    with CONTENT.open(encoding="utf-8") as f:
-        content = json.load(f)
-    pages = load_pages()
+    content = load_content()
     if DIST.exists():
         shutil.rmtree(DIST)
     shutil.copytree(ASSETS, DIST / "assets")
@@ -418,15 +477,23 @@ def build():
             shutil.copy2(photo, DIST / "assets" / photo.name)
         photo_src = "assets/{}?v={}".format(photo.name, hashlib.md5(photo.read_bytes()).hexdigest()[:8])
 
-    for page in pages:
-        (DIST / page["file"]).write_text(render(page, pages, content, photo_src), encoding="utf-8")
+    # every language whose pages folder exists
+    langs = [(code, folder, load_content(override), load_pages(pages_dir))
+             for code, folder, pages_dir, override in LANGS if pages_dir.is_dir() and any(pages_dir.glob("*.md"))]
+    for code, folder, lang_content, pages in langs:
+        others = [(f, {p["file"] for p in ps}) for c2, f, _, ps in langs if c2 != code]
+        out_dir = DIST / folder
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for page in pages:
+            html_text = render(page, pages, lang_content, photo_src, code, folder, others[0] if others else None)
+            (out_dir / page["file"]).write_text(html_text, encoding="utf-8")
     (DIST / ".nojekyll").write_text("", encoding="utf-8")
 
     # sitemap + robots for search engines
     if content["site"].get("url"):
         base = content["site"]["url"].rstrip("/") + "/"
-        urls = "".join("\n  <url><loc>{}</loc></url>".format(esc(base if p["file"] == "index.html" else base + p["file"]))
-                       for p in pages)
+        urls = "".join("\n  <url><loc>{}</loc></url>".format(esc(base + folder + ("" if p["file"] == "index.html" else p["file"])))
+                       for _, folder, _, pages in langs for p in pages)
         (DIST / "sitemap.xml").write_text(
             '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
             "{}\n</urlset>\n".format(urls), encoding="utf-8")
@@ -436,7 +503,8 @@ def build():
 # ---------- local dev server ----------
 
 def source_mtime():
-    files = [CONTENT] + [p for d in (ASSETS, PAGES) for p in d.rglob("*") if p.is_file()]
+    files = [f for f in (CONTENT, CONTENT_EN) if f.is_file()]
+    files += [p for d in (ASSETS, PAGES) for p in d.rglob("*") if p.is_file()]
     files += [p for p in ROOT.iterdir() if p.suffix.lower() in IMAGE_TYPES]
     return max(p.stat().st_mtime for p in files)
 

@@ -1,0 +1,39 @@
+{
+  "_הוראות": "הגרסה האנגלית. כאן רק מה ששונה מ-content.json – כל השאר (טלפון, תמונות, גוגל...) נלקח משם. טקסט העמודים באנגלית: בתיקייה pages/en.",
+
+  "site": {
+    "title": "Linor Nezri-Sher – Speech-Language Therapist | Kfar HaNagid, near Ness Ziona, Yavne & Rehovot",
+    "description": "Linor Nezri-Sher, speech-language therapist with 8 years of experience and an M.A. in early childhood. Speech, language and communication therapy and language assessments in Moshav Kfar HaNagid, near Ness Ziona, Yavne and Rehovot."
+  },
+
+  "brand": {
+    "name": "Linor Nezri-Sher",
+    "role": "Speech-Language Therapist",
+    "eyebrow": "8 years of experience · Kfar HaNagid, near Ness Ziona, Yavne & Rehovot"
+  },
+
+  "home_buttons": [
+    { "text": "WhatsApp", "link": "whatsapp", "style": "primary" },
+    { "text": "Call", "link": "phone", "style": "secondary" },
+    { "text": "Navigate with Waze", "link": "address", "style": "secondary" }
+  ],
+
+  "certificates": {
+    "title": "Education & Experience",
+    "items": [
+      { "title": "M.A. in Early Childhood", "issuer": "Hadassah Academic College", "year": "", "image": "" },
+      { "title": "B.A. in Communication Disorders", "issuer": "Institution name (to update)", "year": "", "image": "" },
+      { "title": "Ministry of Health License", "issuer": "Speech-language therapy", "year": "", "image": "" },
+      { "title": "8 Years of Experience", "issuer": "Working with children and families", "year": "", "image": "" }
+    ]
+  },
+
+  "contact": {
+    "whatsapp_message": "Hi Linor, ",
+    "address_display": "96 HaErez St., Moshav Kfar HaNagid",
+    "street": "96 HaErez St.",
+    "city": "Kfar HaNagid",
+    "area_served": ["Kfar HaNagid", "Ness Ziona", "Yavne", "Rehovot"],
+    "facebook_label": "Bemachshava Mila"
+  }
+}

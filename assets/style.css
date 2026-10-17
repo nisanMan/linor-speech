@@ -97,9 +97,12 @@ a:hover { color: var(--sage-dark); }
 /* ---------- כפתורים ---------- */
 .actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 2rem; }
 .btn {
-  display: inline-block; padding: .7rem 1.9rem; border: 1.5px solid var(--sage); border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+  padding: .7rem 1.9rem; border: 1.5px solid var(--sage); border-radius: 999px;
   font-weight: 600; text-decoration: none; transition: background .2s, color .2s, transform .2s, box-shadow .2s;
 }
+.btn .ci { width: 26px; height: 26px; flex: none; }
+.home .actions .btn { min-width: 12.5rem; }   /* כפתורי דף הבית ברוחב אחיד */
 .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .btn-primary { background: var(--sage); color: var(--white); }
 .btn-primary:hover { background: var(--sage-dark); border-color: var(--sage-dark); color: var(--white); }
@@ -279,8 +282,9 @@ a.zoom { cursor: zoom-in; }
 
 /* ---------- טלפון: תפריט המבורגר ---------- */
 @media (max-width: 960px) {
-  .menu-btn { display: block; }
-  .lang-switch { margin-inline-start: .5rem; }
+  /* בטלפון: כפתור השפה לפני ההמבורגר */
+  .lang-switch { order: 1; margin-inline-start: auto; }
+  .menu-btn { display: block; order: 2; margin-inline-start: .4rem; }
   .menu {
     display: none; position: absolute; top: 100%; inset-inline: 0;
     flex-direction: column; gap: 0; background: var(--white);

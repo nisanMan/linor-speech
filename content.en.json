@@ -13,9 +13,8 @@
   },
 
   "home_buttons": [
-    { "text": "WhatsApp", "link": "whatsapp", "style": "primary" },
-    { "text": "Call", "link": "phone", "style": "secondary" },
-    { "text": "Navigate with Waze", "link": "address", "style": "secondary" }
+    { "text": "WhatsApp", "link": "whatsapp", "style": "primary", "icon": "whatsapp" },
+    { "text": "Navigate with Waze", "link": "address", "style": "primary", "icon": "waze" }
   ],
 
   "certificates": {

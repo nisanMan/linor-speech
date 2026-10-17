@@ -225,8 +225,12 @@ def body_home(page, c, photo_src):
     if photo_src:
         photo = '<div class="photo-wrap {}"><img class="photo" src="{}" alt="{}"></div>'.format(
             esc(c.get("photo_shape", "circle")), esc(photo_src), esc(brand["name"]))
-    buttons = "".join(link_html(esc(href(b["link"], c["contact"])), inline(b["text"]), "btn btn-" + b.get("style", "primary"))
-                      for b in c.get("home_buttons", []) if href(b["link"], c["contact"]))
+    button_icons = {"whatsapp": whatsapp_icon, "waze": waze_icon}
+    buttons = "".join(
+        link_html(esc(href(b["link"], c["contact"])),
+                  (button_icons[b["icon"]]() if b.get("icon") in button_icons else "") + "<span>{}</span>".format(inline(b["text"])),
+                  "btn btn-" + b.get("style", "primary"))
+        for b in c.get("home_buttons", []) if href(b["link"], c["contact"]))
     return """
 <section class="home wrap{no_photo}">
   {photo}

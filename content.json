@@ -24,9 +24,8 @@
   "photo_shape": "circle",
 
   "home_buttons": [
-    { "text": "וואטסאפ", "link": "whatsapp", "style": "primary" },
-    { "text": "שיחה טלפונית", "link": "phone", "style": "secondary" },
-    { "text": "ניווט ב-Waze", "link": "address", "style": "secondary" }
+    { "text": "וואטסאפ", "link": "whatsapp", "style": "primary", "icon": "whatsapp" },
+    { "text": "ניווט ב-Waze", "link": "address", "style": "primary", "icon": "waze" }
   ],
 
   "certificates": {

@@ -235,14 +235,13 @@ def body_home(page, c, photo_src):
 <section class="home wrap{no_photo}">
   {photo}
   <div class="home-text">
-    <p class="eyebrow">{eyebrow}</p>
-    <h1>{name}</h1>
+    {eyebrow}<h1>{name}</h1>
     <p class="role">{role}</p>
     <span class="rule" aria-hidden="true"></span>
     <div class="prose">{text}</div>
     <div class="actions">{buttons}</div>
   </div>
-</section>""".format(no_photo="" if photo else " no-photo", photo=photo, eyebrow=inline(brand.get("eyebrow", "")),
+</section>""".format(no_photo="" if photo else " no-photo", photo=photo, eyebrow='<p class="eyebrow">{}</p>\n    '.format(inline(brand["eyebrow"])) if brand.get("eyebrow") else "",
                      name=esc(brand["name"]), role=esc(brand["role"]), text=markdown(page["body"]), buttons=buttons)
 
 

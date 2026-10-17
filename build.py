@@ -15,7 +15,7 @@ import re
 import shutil
 import sys
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 ROOT = Path(__file__).resolve().parent
 CONTENT = ROOT / "content.json"
@@ -50,11 +50,11 @@ LANGS = [("he", "", PAGES, None),
 UI = {
     "he": {"dir": "rtl", "locale": "he_IL", "send_message": "שליחת הודעה", "menu": "תפריט",
            "main_nav": "ניווט ראשי", "lightbox": "תצוגה מוגדלת", "whatsapp": "וואטסאפ", "waze": "ניווט בוויז",
-           "switch_text": "EN", "switch_label": "English version",
+           "switch_text": "EN", "switch_label": "EN – English version",
            "labels": {"phone": "טלפון", "whatsapp": "וואטסאפ", "email": "דוא״ל", "address": "כתובת", "facebook": "פייסבוק"}},
     "en": {"dir": "ltr", "locale": "en_US", "send_message": "Send a message", "menu": "Menu",
            "main_nav": "Main navigation", "lightbox": "Enlarged view", "whatsapp": "WhatsApp", "waze": "Navigate with Waze",
-           "switch_text": "עב", "switch_label": "גרסה בעברית",
+           "switch_text": "עב", "switch_label": "עב – גרסה בעברית",
            "labels": {"phone": "Phone", "whatsapp": "WhatsApp", "email": "Email", "address": "Address", "facebook": "Facebook"}},
 }
 
@@ -104,7 +104,7 @@ def markdown(text):
         lines = [l.rstrip() for l in block.strip().splitlines()]
         m = re.match(r"(#{1,4})\s+(.*)", lines[0])
         if m and len(lines) == 1:
-            level = min(len(m.group(1)) + 1, 4)  # '#' becomes h2: the page title is the h1
+            level = min(max(len(m.group(1)), 2), 4)  # '#' and '##' become h2 (the page title is the h1), '###' h3
             out.append("<h{0}>{1}</h{0}>".format(level, inline(m.group(2))))
         elif all(re.match(r"[-*]\s+", l) for l in lines):
             out.append("<ul>{}</ul>".format("".join("<li>{}</li>".format(inline(l[2:].strip())) for l in lines)))
@@ -198,6 +198,7 @@ def load_pages(folder=PAGES):
             "image_alt": meta.get("image_alt", ""),
             "image_shape": meta.get("image_shape", "arch"),
             "certificates": meta.get("certificates", "").lower() == "true",
+            "hidden": meta.get("hidden", "").lower() == "true",  # not in menu / sitemap (e.g. 404)
             "body": body,
         })
     pages.sort(key=lambda p: p["order"])
@@ -354,6 +355,10 @@ def render(page, pages, c, photo_src, lang="he", lang_dir="", other=None):
             inner = body_faq(page)
         elif page["layout"] == "contact":
             inner = '<div class="prose">{}</div>{}'.format(markdown(page["body"]), contact_list(c["contact"], ui))
+        elif page["layout"] == "notfound":
+            inner = ('<div class="prose">{}</div><div class="actions">'
+                     '<a class="btn btn-primary" href="index.html">לדף הבית</a>'
+                     '<a class="btn btn-secondary" href="en/index.html" lang="en">Home page</a></div>').format(markdown(page["body"]))
         else:
             inner = '<div class="prose">{}</div>'.format(markdown(page["body"]))
         title = inline(page["title"] or page["nav"])
@@ -375,7 +380,7 @@ def render(page, pages, c, photo_src, lang="he", lang_dir="", other=None):
 <section class="page-body wrap narrow">{inner}</section>{certs}""".format(title=title, inner=inner, certs=certs)
 
     nav = "".join('<a href="{}"{}>{}</a>'.format(lang_dir + p["file"], ' aria-current="page"' if p is page else "", esc(p["nav"]))
-                  for p in pages)
+                  for p in pages if not p["hidden"])
     site, brand, contact = c["site"], c["brand"], c["contact"]
     title = site["title"] if page["layout"] == "home" else "{} | {}".format(page["title"] or page["nav"], brand["name"])
 
@@ -417,6 +422,12 @@ def render(page, pages, c, photo_src, lang="he", lang_dir="", other=None):
         float_wa += '\n<a class="float-waze" href="{}" target="_blank" rel="noopener" aria-label="{}">{}</a>'.format(
             esc(href("address", contact)), esc(ui["waze"]), waze_icon())
     base_tag = '\n  <base href="../">' if lang_dir else ""
+    if page["layout"] == "notfound":
+        # GitHub Pages shows 404.html at any missing address, so links must be relative to the site root
+        root_path = urlparse(site.get("url", "")).path or "/"
+        base_tag = '\n  <base href="{}">'.format(esc(root_path))
+        canonical = '\n  <meta name="robots" content="noindex">'
+        switch = ""
     return """<!doctype html>
 <html lang="{lang}" dir="{dir}">
 <head>
@@ -481,7 +492,7 @@ def build():
     langs = [(code, folder, load_content(override), load_pages(pages_dir))
              for code, folder, pages_dir, override in LANGS if pages_dir.is_dir() and any(pages_dir.glob("*.md"))]
     for code, folder, lang_content, pages in langs:
-        others = [(f, {p["file"] for p in ps}) for c2, f, _, ps in langs if c2 != code]
+        others = [(f, {p["file"] for p in ps if not p["hidden"]}) for c2, f, _, ps in langs if c2 != code]
         out_dir = DIST / folder
         out_dir.mkdir(parents=True, exist_ok=True)
         for page in pages:
@@ -493,7 +504,7 @@ def build():
     if content["site"].get("url"):
         base = content["site"]["url"].rstrip("/") + "/"
         urls = "".join("\n  <url><loc>{}</loc></url>".format(esc(base + folder + ("" if p["file"] == "index.html" else p["file"])))
-                       for _, folder, _, pages in langs for p in pages)
+                       for _, folder, _, pages in langs for p in pages if not p["hidden"])
         (DIST / "sitemap.xml").write_text(
             '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
             "{}\n</urlset>\n".format(urls), encoding="utf-8")

@@ -185,6 +185,7 @@ a:hover { color: var(--sage-dark); }
 
 .prose p + p, .prose p + ul, .prose ul + p { margin-top: 1.1em; }
 .prose h2 { font-size: 1.5rem; margin: 2rem 0 .6rem; }
+.prose h3 { font-size: 1.35rem; color: var(--sage-dark); margin: 2rem 0 .4rem; }
 .prose ul { list-style: none; padding: 0; }
 .prose li { position: relative; padding: .75rem 1.6rem .75rem 0; border-bottom: 1px solid var(--line); }
 .prose li::before {

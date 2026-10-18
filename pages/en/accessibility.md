@@ -37,10 +37,10 @@ The website has been checked with automated testing tools and manually. [TO COMP
 
 Found an accessibility problem on the website or at the clinic? We would be glad to hear about it and fix it:
 
-- Accessibility coordinator: [TO COMPLETE: name]
-- Phone: 052-897-4142
-- Email: [TO COMPLETE: email address]
+- Accessibility coordinator: Linor Nezri-Sher
+- Phone: [052-897-4142](tel:0528974142)
+- WhatsApp (written contact): [052-897-4142](https://wa.me/972528974142)
 
-We aim to respond within [TO COMPLETE: number] business days.
+We aim to respond to every request within 14 business days.
 
-Statement last updated: [TO COMPLETE: date]
+Statement last updated: October 18, 2026

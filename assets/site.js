@@ -1,9 +1,18 @@
 // תפריט המבורגר בטלפון
 var menuBtn = document.querySelector(".menu-btn");
-menuBtn.addEventListener("click", function () {
-  var open = menuBtn.getAttribute("aria-expanded") !== "true";
+function setMenu(open) {
   menuBtn.setAttribute("aria-expanded", open);
   document.body.classList.toggle("menu-open", open);
+}
+menuBtn.addEventListener("click", function () {
+  setMenu(menuBtn.getAttribute("aria-expanded") !== "true");
+});
+// נגישות: Esc סוגר את התפריט ומחזיר את המיקוד לכפתור
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape" && document.body.classList.contains("menu-open")) {
+    setMenu(false);
+    menuBtn.focus();
+  }
 });
 
 // הגדלת תמונות תעודה

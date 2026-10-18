@@ -39,7 +39,19 @@ p, ul, dl, dd, figure { margin: 0; }
 img { display: block; max-width: 100%; }
 a { color: var(--sage); text-underline-offset: .2em; }
 a:hover { color: var(--sage-dark); }
-:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
+/* נגישות: מסגרת ברורה לניווט במקלדת, טקסט לקוראי מסך בלבד, וקישור "דילוג לתוכן" */
+:focus-visible { outline: 3px solid var(--sage-dark); outline-offset: 3px; border-radius: 4px; }
+main:focus { outline: none; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; inset-inline-start: 1rem; top: -100px; z-index: 100;
+  background: var(--sage-dark); color: var(--white); padding: .6rem 1.2rem; border-radius: 8px;
+  font-weight: 700; text-decoration: none;
+}
+.skip-link:focus { top: 1rem; color: var(--white); }
 
 .wrap { width: min(72rem, 100% - 3rem); margin-inline: auto; }
 .narrow { width: min(40rem, 100% - 3rem); }
@@ -77,7 +89,7 @@ a:hover { color: var(--sage-dark); }
 
 /* כפתור החלפת שפה (עברית / English) */
 .lang-switch {
-  flex: none; margin-inline-start: 1.2rem; padding: .2rem .75rem;
+  flex: none; margin-inline-start: 1.2rem; padding: .2rem .75rem; min-height: 2rem; display: inline-flex; align-items: center;
   border: 1.5px solid var(--sage); border-radius: 999px;
   color: var(--sage-dark); font-size: .85rem; font-weight: 700; text-decoration: none; line-height: 1.6;
   transition: background .2s, color .2s;
@@ -186,10 +198,10 @@ a:hover { color: var(--sage-dark); }
 .frame-house::after { left: 67%; top: 4%; width: 11%; height: 18%; background: var(--clay); border-radius: 4px 4px 0 0; }
 
 /* צורה אורגנית שזזה לאט */
-.frame-blob img { aspect-ratio: 1; border-radius: 62% 38% 55% 45% / 52% 45% 55% 48%; animation: morph 14s ease-in-out infinite alternate; }
+.frame-blob img { aspect-ratio: 1; border-radius: 62% 38% 55% 45% / 52% 45% 55% 48%; animation: morph 4.5s ease-in-out 1; }   /* פעם אחת, פחות מ-5 שניות (תקן נגישות) */
 .frame-blob::before {
   inset: -14px; border: 2px solid var(--clay);
-  border-radius: 45% 55% 40% 60% / 55% 40% 60% 45%; animation: morph 18s ease-in-out infinite alternate-reverse;
+  border-radius: 45% 55% 40% 60% / 55% 40% 60% 45%; animation: morph 4.5s ease-in-out 1 reverse;
 }
 @keyframes morph { 50% { border-radius: 40% 60% 45% 55% / 60% 40% 58% 42%; } }
 

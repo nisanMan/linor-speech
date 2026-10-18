@@ -50,11 +50,13 @@ LANGS = [("he", "", PAGES, None),
 UI = {
     "he": {"dir": "rtl", "locale": "he_IL", "send_message": "שליחת הודעה", "menu": "תפריט",
            "main_nav": "ניווט ראשי", "lightbox": "תצוגה מוגדלת", "whatsapp": "וואטסאפ", "waze": "ניווט בוויז",
-           "switch_text": "EN", "switch_label": "EN – English version",
+           "switch_text": "EN", "switch_label": "EN – English version", "skip": "דילוג לתוכן",
+           "new_tab": "(נפתח בחלון חדש)", "accessibility": "הצהרת נגישות",
            "labels": {"phone": "טלפון", "whatsapp": "וואטסאפ", "email": "דוא״ל", "address": "כתובת", "facebook": "פייסבוק"}},
     "en": {"dir": "ltr", "locale": "en_US", "send_message": "Send a message", "menu": "Menu",
            "main_nav": "Main navigation", "lightbox": "Enlarged view", "whatsapp": "WhatsApp", "waze": "Navigate with Waze",
-           "switch_text": "עב", "switch_label": "עב – גרסה בעברית",
+           "switch_text": "עב", "switch_label": "עב – גרסה בעברית", "skip": "Skip to content",
+           "new_tab": "(opens in a new tab)", "accessibility": "Accessibility statement",
            "labels": {"phone": "Phone", "whatsapp": "WhatsApp", "email": "Email", "address": "Address", "facebook": "Facebook"}},
 }
 
@@ -91,10 +93,37 @@ def inline(text):
     return out.replace("\n", "<br>")
 
 
+# language of the page being rendered (set by render) – used for screen-reader hints and lang marks
+CURRENT = {"lang": "he"}
+
+
 def link_html(url, text, cls=""):
-    extra = ' target="_blank" rel="noopener"' if url.startswith("http") else ""
+    extra, hint = "", ""
+    if url.startswith("http"):  # external links open in a new tab – tell screen-reader users
+        extra = ' target="_blank" rel="noopener"'
+        hint = '<span class="sr-only"> {}</span>'.format(esc(UI[CURRENT["lang"]]["new_tab"]))
     cls_attr = ' class="{}"'.format(cls) if cls else ""
-    return '<a href="{}"{}{}>{}</a>'.format(url, cls_attr, extra, text)
+    return '<a href="{}"{}{}>{}{}</a>'.format(url, cls_attr, extra, text, hint)
+
+
+HEBREW = re.compile(r"[֐-׿]")
+LATIN = re.compile(r"[A-Za-z]")
+
+
+def lang_attr(text):
+    """' lang="en"' for an all-English block on a Hebrew page (and vice versa), so screen readers switch voice."""
+    if CURRENT["lang"] == "he" and LATIN.search(text) and not HEBREW.search(text):
+        return ' lang="en"'
+    if CURRENT["lang"] == "en" and HEBREW.search(text) and not LATIN.search(text):
+        return ' lang="he"'
+    return ""
+
+
+def mark_foreign_words(html_text):
+    """Wrap English words inside Hebrew text (e.g. 'Waze') with lang="en". Only for plain text without tags."""
+    if CURRENT["lang"] != "he" or "<" in html_text:
+        return html_text
+    return re.sub(r"[A-Za-z][A-Za-z\-']*", lambda m: '<span lang="en">{}</span>'.format(m.group(0)), html_text)
 
 
 def markdown(text):
@@ -107,11 +136,12 @@ def markdown(text):
             level = min(max(len(m.group(1)), 2), 4)  # '#' and '##' become h2 (the page title is the h1), '###' h3
             out.append("<h{0}>{1}</h{0}>".format(level, inline(m.group(2))))
         elif all(re.match(r"[-*]\s+", l) for l in lines):
-            out.append("<ul>{}</ul>".format("".join("<li>{}</li>".format(inline(l[2:].strip())) for l in lines)))
+            out.append("<ul>{}</ul>".format("".join(
+                "<li{}>{}</li>".format(lang_attr(l), inline(l[2:].strip())) for l in lines)))
         elif all(l.startswith(">") for l in lines):
             out.append("<blockquote><p>{}</p></blockquote>".format(inline(" ".join(l[1:].strip() for l in lines))))
         else:
-            out.append("<p>{}</p>".format(inline(" ".join(lines))))
+            out.append("<p{}>{}</p>".format(lang_attr(" ".join(lines)), inline(" ".join(lines))))
     return "\n".join(out)
 
 
@@ -199,6 +229,7 @@ def load_pages(folder=PAGES):
             "image_shape": meta.get("image_shape", "arch"),
             "certificates": meta.get("certificates", "").lower() == "true",
             "hidden": meta.get("hidden", "").lower() == "true",  # not in menu / sitemap (e.g. 404)
+            "place": meta.get("place", "menu"),  # "menu" = top tabs, "footer" = link in the footer only
             "body": body,
         })
     pages.sort(key=lambda p: p["order"])
@@ -228,7 +259,8 @@ def body_home(page, c, photo_src):
     button_icons = {"whatsapp": whatsapp_icon, "waze": waze_icon}
     buttons = "".join(
         link_html(esc(href(b["link"], c["contact"])),
-                  (button_icons[b["icon"]]() if b.get("icon") in button_icons else "") + "<span>{}</span>".format(inline(b["text"])),
+                  (button_icons[b["icon"]]() if b.get("icon") in button_icons else "")
+                  + "<span>{}</span>".format(mark_foreign_words(inline(b["text"]))),
                   "btn btn-" + b.get("style", "primary"))
         for b in c.get("home_buttons", []) if href(b["link"], c["contact"]))
     return """
@@ -351,6 +383,7 @@ def render(page, pages, c, photo_src, lang="he", lang_dir="", other=None):
     """Render one page. lang_dir is "" for Hebrew or "en/" for English; links are written relative to the
     site root (a <base> tag makes that work inside en/). other = (folder, set of files) of the other language."""
     ui = UI[lang]
+    CURRENT["lang"] = lang
     if page["layout"] == "home":
         main = body_home(page, c, photo_src)
     else:
@@ -383,7 +416,10 @@ def render(page, pages, c, photo_src, lang="he", lang_dir="", other=None):
 <section class="page-body wrap narrow">{inner}</section>{certs}""".format(title=title, inner=inner, certs=certs)
 
     nav = "".join('<a href="{}"{}>{}</a>'.format(lang_dir + p["file"], ' aria-current="page"' if p is page else "", esc(p["nav"]))
-                  for p in pages if not p["hidden"])
+                  for p in pages if not p["hidden"] and p["place"] == "menu")
+    footer_links = "".join(' · <a href="{}"{}>{}</a>'.format(lang_dir + p["file"], ' aria-current="page"' if p is page else "",
+                                                            esc(p["nav"]))
+                           for p in pages if not p["hidden"] and p["place"] == "footer")
     site, brand, contact = c["site"], c["brand"], c["contact"]
     title = site["title"] if page["layout"] == "home" else "{} | {}".format(page["title"] or page["nav"], brand["name"])
 
@@ -420,10 +456,10 @@ def render(page, pages, c, photo_src, lang="he", lang_dir="", other=None):
     float_wa = ""
     if contact.get("whatsapp"):
         float_wa = '<a class="float-wa" href="{}" target="_blank" rel="noopener" aria-label="{}">{}</a>'.format(
-            esc(href("whatsapp", contact)), esc(ui["whatsapp"]), whatsapp_icon())
+            esc(href("whatsapp", contact)), esc(ui["whatsapp"] + " " + ui["new_tab"]), whatsapp_icon())
     if contact.get("address"):
         float_wa += '\n<a class="float-waze" href="{}" target="_blank" rel="noopener" aria-label="{}">{}</a>'.format(
-            esc(href("address", contact)), esc(ui["waze"]), waze_icon())
+            esc(href("address", contact)), esc(ui["waze"] + " " + ui["new_tab"]), waze_icon())
     base_tag = '\n  <base href="../">' if lang_dir else ""
     if page["layout"] == "notfound":
         # GitHub Pages shows 404.html at any missing address, so links must be relative to the site root
@@ -450,6 +486,7 @@ def render(page, pages, c, photo_src, lang="he", lang_dir="", other=None):
   <link rel="stylesheet" href="{style_css}">{head_extra}
 </head>
 <body>
+<a class="skip-link" href="{skip_href}">{skip_text}</a>
 <header class="site-header">
   <div class="wrap bar">
     <a class="brand" href="{home}"><span class="brand-name">{name}</span><span class="brand-role">{role}</span></a>
@@ -460,15 +497,18 @@ def render(page, pages, c, photo_src, lang="he", lang_dir="", other=None):
     {switch}
   </div>
 </header>
-<main>{main}
+<main id="main" tabindex="-1">{main}
 </main>
-<footer class="site-footer"><div class="wrap">{footer} · © {year}</div></footer>
+<footer class="site-footer"><div class="wrap">{footer} · © {year}{footer_links}</div></footer>
 {float_wa}
 <dialog class="lightbox" aria-label="{lightbox_label}"><img alt=""></dialog>
 <script src="{site_js}"></script>
 </body>
 </html>
 """.format(lang=lang, dir=ui["dir"], base_tag=base_tag, locale=ui["locale"], home=lang_dir + "index.html",
+           # with a <base> tag a bare "#main" would point at the base page, so spell out the file
+           skip_href=(lang_dir + page["file"] + "#main") if base_tag else "#main",
+           skip_text=esc(ui["skip"]), footer_links=footer_links,
            menu_label=esc(ui["menu"]), nav_label=esc(ui["main_nav"]), lightbox_label=esc(ui["lightbox"]), switch=switch,
            title=esc(title), description=esc(page["description"] or site["description"]), canonical=canonical,
            name=esc(brand["name"]), role=esc(brand["role"]), nav=nav, main=main, footer=" · ".join(footer_bits),
